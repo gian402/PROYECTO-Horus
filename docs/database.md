@@ -27,11 +27,11 @@ No existe relación entre `users` y `students`: los participantes no tienen cuen
 | Tabla | Propósito | Claves y restricciones |
 |---|---|---|
 | `students` | Participantes | `dni varchar(15)` UNIQUE, CHECK no vacío; email y teléfono opcionales |
-| `courses` | Catálogo | `code varchar(10)` UNIQUE, CHECK `^[A-Z0-9]+$` |
+| `courses` | Catálogo | `code varchar(10)` UNIQUE, CHECK `^[A-Z0-9]+(-[A-Z0-9]+)*$` (admite guiones internos, como `NUT-DIET`) |
 | `teachers` | Ponentes | `dni varchar(15)` UNIQUE, CHECK no vacío |
-| `course_editions` | Convocatorias | FK `course_id`, FK `teacher_id` (nullable); CHECK `end_date >= start_date`; CHECK `year BETWEEN 2000 AND 2100` |
+| `course_editions` | Convocatorias | FK `course_id`, FK `teacher_id` (nullable); fechas nullable solo para ediciones históricas: CHECK de ambas nulas o ambas presentes y `end_date >= start_date`; CHECK `year BETWEEN 2000 AND 2100` |
 | `registration_sequences` | Contador del correlativo | UNIQUE `(course_id, year)`; CHECK `last_number >= 0` |
-| `enrollments` | Matrículas y notas | UNIQUE `registration_code`; UNIQUE `(student_id, course_edition_id)`; CHECK nota 0–20; CHECK estado ∈ {cursando, aprobado, desaprobado}; CHECK `(grade IS NULL) = (status = 'cursando')` |
+| `enrollments` | Matrículas y notas | UNIQUE `registration_code`; UNIQUE `(student_id, course_edition_id)`; CHECK nota 0–20; CHECK estado ∈ {cursando, aprobado, desaprobado}; `role` ∈ {participante, ponente}; `historical boolean`; CHECK de coherencia: `(grade IS NULL) = (status = 'cursando')`, o bien aprobado sin nota si `historical` o `role = 'ponente'` |
 | `certificates` | Emisiones | UNIQUE `unique_hash`; índice único parcial `(enrollment_id) WHERE revoked_at IS NULL`; CHECK `revoked_at >= issued_at` |
 
 Tipos: PK `bigint` (`bigserial`), DNI y códigos en `varchar` (conservan ceros a la izquierda), notas en `numeric(4,2)`, fechas académicas en `date`, sellos de tiempo en `timestamp(0)`.
@@ -65,6 +65,7 @@ PostgreSQL **no** indexa automáticamente las columnas FK; cada índice responde
 
 ### Evaluación (`App\Enums\EnrollmentStatus::fromGrade`)
 - Sin nota → `cursando`; nota ≥ `config('academic.passing_grade')` (14) → `aprobado`; si no, `desaprobado`.
+- Excepciones (migración `support_historical_records`): las matrículas **históricas** importadas sin nota y los **ponentes** quedan `aprobado` sin nota. Un ponente nunca se califica.
 - `Enrollment::$status` no es asignable masivamente: el evento `saving` lo recalcula siempre a partir de la nota. Lo que envíe el frontend se ignora.
 - El umbral 14 **no** está en un CHECK de la base, para poder cambiarlo sin migración. La base solo exige coherencia entre nota nula y estado `cursando`, y que la nota esté entre 0 y 20.
 
@@ -88,7 +89,7 @@ PostgreSQL **no** indexa automáticamente las columnas FK; cada índice responde
 
 - Pest 5. `tests/Feature` usa `RefreshDatabase` contra **`horus_prueba_test`**, configurada en `phpunit.xml` con `force="true"`.
 - `Tests\TestCase::setUpTraits()` aborta, antes de que `RefreshDatabase`, `DatabaseMigrations` o `DatabaseTruncation` actúen, si el driver no es `pgsql` o si la base no termina en `_test`. Así nunca se borra `horus_prueba`. La prueba `tests/Unit/TestingDatabaseGuardTest.php` lo verifica. La guarda no puede ir en `beforeRefreshingDatabase()`, porque el método del trait tiene prioridad y la anularía.
-- Última ejecución completa: **106 pruebas, 106 exitosas, 260 aserciones, 0 fallos, 0 omitidas** (PostgreSQL 18, `horus_prueba_test`). Incluye dominio, autenticación y ajustes del starter kit, el comando de administrador y la concurrencia.
+- Última ejecución completa: **302 pruebas, 302 exitosas, 1222 aserciones, 0 fallos, 0 omitidas** (PostgreSQL 18, `horus_prueba_test`). Incluye dominio, módulos, importación del libro histórico, autenticación y ajustes del starter kit, el comando de administrador y la concurrencia.
 - No se usa SQLite para validar restricciones de PostgreSQL.
 
 ## Concurrencia real (suite `Concurrency`)
@@ -107,4 +108,4 @@ Resultado: 3 ejecuciones consecutivas, 3 de 3 pruebas exitosas en cada una.
 
 ## Pendientes
 
-- Servicio de emisión de certificados (validar aprobación, PDF, QR).
+- Concurrencia de emisión de certificados: cubierta por `FOR UPDATE` e índice único parcial; sin prueba multi-proceso específica.

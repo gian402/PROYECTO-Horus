@@ -13,7 +13,7 @@ defineOptions({
     layout: {
         breadcrumbs: [
             {
-                title: 'Profile settings',
+                title: 'Perfil',
                 href: edit(),
             },
         ],
@@ -25,15 +25,15 @@ const user = computed(() => page.props.auth.user);
 </script>
 
 <template>
-    <Head title="Profile settings" />
+    <Head title="Perfil" />
 
-    <h1 class="sr-only">Profile settings</h1>
+    <h1 class="sr-only">Perfil</h1>
 
     <div class="flex flex-col space-y-6">
         <Heading
             variant="small"
-            title="Profile"
-            description="Update your name and email address"
+            title="Perfil"
+            description="Actualiza tu nombre y correo electrónico"
         />
 
         <Form
@@ -42,7 +42,7 @@ const user = computed(() => page.props.auth.user);
             v-slot="{ errors, processing }"
         >
             <div class="grid gap-2">
-                <Label for="name">Name</Label>
+                <Label for="name">Nombre</Label>
                 <Input
                     id="name"
                     class="mt-1 block w-full"
@@ -50,13 +50,13 @@ const user = computed(() => page.props.auth.user);
                     :default-value="user.name"
                     required
                     autocomplete="name"
-                    placeholder="Full name"
+                    placeholder="Nombre completo"
                 />
                 <InputError class="mt-2" :message="errors.name" />
             </div>
 
             <div class="grid gap-2">
-                <Label for="email">Email address</Label>
+                <Label for="email">Correo electrónico</Label>
                 <Input
                     id="email"
                     type="email"
@@ -65,7 +65,7 @@ const user = computed(() => page.props.auth.user);
                     :default-value="user.email"
                     required
                     autocomplete="username"
-                    placeholder="Email address"
+                    placeholder="Correo electrónico"
                 />
                 <InputError class="mt-2" :message="errors.email" />
             </div>
@@ -73,7 +73,7 @@ const user = computed(() => page.props.auth.user);
 
             <div class="flex items-center gap-4">
                 <Button :disabled="processing" data-test="update-profile-button"
-                    >Save</Button
+                    >Guardar</Button
                 >
             </div>
         </Form>

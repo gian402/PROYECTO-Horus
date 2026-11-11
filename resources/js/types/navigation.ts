@@ -11,4 +11,6 @@ export type NavItem = {
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon;
     isActive?: boolean;
+    /** Se muestra si el usuario tiene alguno de estos permisos. */
+    permissions?: string[];
 };

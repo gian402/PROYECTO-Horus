@@ -95,9 +95,15 @@ describe('check constraints', function () {
             ->toThrow(QueryException::class, 'course_editions_year_check');
     });
 
-    it('rejects course codes with characters not allowed in registration codes', function () {
-        expect(fn () => DB::table('courses')->insert(['code' => 'P-A', 'name' => 'X']))
+    it('rejects course codes with characters not allowed in registration codes', function (string $code) {
+        expect(fn () => DB::table('courses')->insert(['code' => $code, 'name' => 'X']))
             ->toThrow(QueryException::class, 'courses_code_format');
+    })->with(['P A', '-PA', 'PA-', 'NUT--DIET', 'pa']);
+
+    it('accepts course codes with inner hyphens', function () {
+        DB::table('courses')->insert(['code' => 'NUT-DIET', 'name' => 'X']);
+
+        expect(DB::table('courses')->where('code', 'NUT-DIET')->exists())->toBeTrue();
     });
 
     it('rejects a blank student DNI', function () {

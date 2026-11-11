@@ -12,6 +12,9 @@ export type User = {
 
 export type Auth = {
     user: User;
+    /** Solo para mostrar u ocultar elementos: el backend siempre vuelve a autorizar. */
+    roles: string[];
+    permissions: string[];
 };
 
 

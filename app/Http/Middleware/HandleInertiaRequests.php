@@ -2,6 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Console\Commands\CreateAdminUser;
+use App\Enums\Permission;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -40,8 +43,29 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),
+                // Solo para mostrar u ocultar elementos: la autorización real está en el backend.
+                'roles' => fn () => $request->user()?->getRoleNames()->values()->all() ?? [],
+                'permissions' => fn () => $this->permissionsFor($request->user()),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
+    }
+
+    /**
+     * Permisos efectivos del usuario. El Super Admin los tiene todos (Gate::before).
+     *
+     * @return list<string>
+     */
+    private function permissionsFor(?User $user): array
+    {
+        if ($user === null) {
+            return [];
+        }
+
+        if ($user->hasRole(CreateAdminUser::ROLE)) {
+            return Permission::values();
+        }
+
+        return $user->getAllPermissions()->pluck('name')->values()->all();
     }
 }

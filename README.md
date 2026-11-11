@@ -2,7 +2,7 @@
 
 CRM interno de **Horus Group SRL** para gestionar participantes, cursos, ediciones, matrículas, calificaciones y certificados con verificación pública.
 
-> Sistema exclusivamente interno: solo el personal se autentica. Los participantes no tienen cuenta y no existe registro público.
+> Sistema exclusivamente interno: solo el personal se autentica. Los participantes no tienen cuenta ni acceso al sistema.
 
 ## Stack
 
@@ -10,6 +10,7 @@ CRM interno de **Horus Group SRL** para gestionar participantes, cursos, edicion
 - PostgreSQL 18 (`pgsql`)
 - Starter kit oficial de Vue: Inertia v3, Vue 3, TypeScript, Tailwind 4, Fortify y Wayfinder
 - Pest 5 · Spatie Laravel Permission 8
+- dompdf (certificados PDF) · bacon/bacon-qr-code (QR) · maatwebsite/excel (importación y exportación)
 
 ## Autenticación
 
@@ -72,4 +73,5 @@ Las pruebas usan una base PostgreSQL **separada**, `horus_prueba_test`, que se b
 
 ## Documentación
 
+- [docs/modules.md](docs/modules.md): módulos, roles y permisos, certificados, importación.
 - [docs/database.md](docs/database.md): modelo relacional, restricciones, índices, reglas de negocio y concurrencia.

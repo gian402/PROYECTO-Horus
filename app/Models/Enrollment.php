@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
 use Database\Factories\EnrollmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -18,9 +19,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * de modo que el backend es la única fuente del estado académico.
  * `registration_code` debe asignarse mediante App\Actions\Enrollments\EnrollStudent.
  *
+ * Excepciones a la regla "sin nota => cursando" (también exigidas por un CHECK):
+ *  - matrículas históricas importadas sin nota: se consideran aprobadas;
+ *  - ponentes: no se califican y siempre quedan aprobados (reciben certificado).
+ *
  * @property EnrollmentStatus $status
+ * @property EnrollmentRole $role
  */
-#[Fillable(['student_id', 'course_edition_id', 'registration_code', 'grade'])]
+#[Fillable(['student_id', 'course_edition_id', 'registration_code', 'grade', 'role', 'historical'])]
 class Enrollment extends Model
 {
     /** @use HasFactory<EnrollmentFactory> */
@@ -31,12 +37,19 @@ class Enrollment extends Model
      */
     protected $attributes = [
         'status' => 'cursando',
+        'role' => 'participante',
+        'historical' => false,
     ];
 
     protected static function booted(): void
     {
         static::saving(function (Enrollment $enrollment): void {
-            $enrollment->status = EnrollmentStatus::fromGrade($enrollment->grade);
+            $approvedWithoutGrade = ($enrollment->grade === null || $enrollment->grade === '')
+                && ($enrollment->historical || $enrollment->isSpeaker());
+
+            $enrollment->status = $approvedWithoutGrade
+                ? EnrollmentStatus::Aprobado
+                : EnrollmentStatus::fromGrade($enrollment->grade);
         });
     }
 
@@ -48,6 +61,8 @@ class Enrollment extends Model
         return [
             'grade' => 'decimal:2',
             'status' => EnrollmentStatus::class,
+            'role' => EnrollmentRole::class,
+            'historical' => 'boolean',
         ];
     }
 
@@ -85,6 +100,11 @@ class Enrollment extends Model
     public function activeCertificate(): HasOne
     {
         return $this->hasOne(Certificate::class)->whereNull('revoked_at');
+    }
+
+    public function isSpeaker(): bool
+    {
+        return $this->role === EnrollmentRole::Ponente;
     }
 
     public function isApproved(): bool

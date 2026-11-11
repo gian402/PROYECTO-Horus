@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\Permission;
 use Database\Factories\CourseEditionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -49,5 +51,53 @@ class CourseEdition extends Model
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);
+    }
+
+    public function hasDates(): bool
+    {
+        return $this->start_date !== null;
+    }
+
+    /**
+     * Periodo legible: "del 01/02/2024 al 20/02/2024" o "en el año 2024".
+     */
+    public function periodText(): string
+    {
+        return $this->hasDates()
+            ? sprintf('del %s al %s', $this->start_date->format('d/m/Y'), $this->end_date->format('d/m/Y'))
+            : sprintf('en el año %d', $this->year);
+    }
+
+    /**
+     * Ediciones que el usuario puede ver: todas con editions.manage;
+     * con solo editions.view, únicamente las que dicta como ponente.
+     *
+     * @param  Builder<CourseEdition>  $query
+     */
+    public function scopeVisibleTo(Builder $query, User $user): void
+    {
+        if ($user->can(Permission::EditionsManage->value)) {
+            return;
+        }
+
+        $query->whereHas('teacher', fn (Builder $q) => $q->where('user_id', $user->id));
+    }
+
+    /**
+     * Etiqueta legible de la edición, p. ej. "PA · 01/02/2024 – 20/02/2024"
+     * o "PA · Año 2024" para las ediciones históricas sin fechas.
+     */
+    public function label(): string
+    {
+        if ($this->start_date === null) {
+            return sprintf('%s · Año %d', $this->course?->code ?? '—', $this->year);
+        }
+
+        return sprintf(
+            '%s · %s – %s',
+            $this->course?->code ?? '—',
+            $this->start_date?->format('d/m/Y'),
+            $this->end_date?->format('d/m/Y'),
+        );
     }
 }

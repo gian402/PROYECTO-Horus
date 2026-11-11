@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\User;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -32,3 +34,28 @@ pest()->extend(TestCase::class)
 pest()->extend(TestCase::class)
     ->use(DatabaseTruncation::class)
     ->in('Concurrency');
+
+/*
+|--------------------------------------------------------------------------
+| Helpers
+|--------------------------------------------------------------------------
+*/
+
+/**
+ * Crea un usuario con el rol indicado (sembrando roles y permisos) y lo autentica.
+ * Usar null para un usuario sin rol.
+ */
+function actingAsRole(?string $role): User
+{
+    test()->seed(RoleSeeder::class);
+
+    $user = User::factory()->create();
+
+    if ($role !== null) {
+        $user->assignRole($role);
+    }
+
+    test()->actingAs($user);
+
+    return $user;
+}

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Enrollments;
 
+use App\Enums\EnrollmentRole;
 use App\Models\CourseEdition;
 use App\Models\Enrollment;
 use App\Models\Student;
@@ -17,9 +18,9 @@ class EnrollStudent
 {
     public function __construct(private readonly RegistrationCodeGenerator $codes) {}
 
-    public function handle(Student $student, CourseEdition $edition): Enrollment
+    public function handle(Student $student, CourseEdition $edition, EnrollmentRole $role = EnrollmentRole::Participante): Enrollment
     {
-        return DB::transaction(function () use ($student, $edition): Enrollment {
+        return DB::transaction(function () use ($student, $edition, $role): Enrollment {
             $alreadyEnrolled = Enrollment::query()
                 ->where('student_id', $student->id)
                 ->where('course_edition_id', $edition->id)
@@ -33,6 +34,7 @@ class EnrollStudent
                 'student_id' => $student->id,
                 'course_edition_id' => $edition->id,
                 'registration_code' => $this->codes->next($edition),
+                'role' => $role,
             ]);
         });
     }

@@ -32,7 +32,7 @@ class Course extends Model
     }
 
     /**
-     * Normaliza el código a mayúsculas (la BD exige ^[A-Z0-9]+$).
+     * Normaliza el código a mayúsculas (la BD exige ^[A-Z0-9]+(-[A-Z0-9]+)*$).
      *
      * @return Attribute<string, string>
      */
