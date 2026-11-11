@@ -9,7 +9,7 @@
 
 @theme inline {
     --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'Montserrat', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 
@@ -59,77 +59,94 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+
+    /* Azul de marca (degradados de tarjetas y paneles) y ámbar claro de acento. */
+    --color-brand: var(--brand);
+    --color-brand-deep: var(--brand-deep);
+    --color-amber-soft: var(--amber-soft);
 }
 
+/*
+ * Paleta de Horus CRM: azul (primario, sidebar azul marino) y ámbar claro (acento).
+ * Todos los colores del sistema salen de estas variables: para retocar la marca
+ * basta con cambiarlas aquí.
+ */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
+    --brand: oklch(0.52 0.2 263);
+    --brand-deep: oklch(0.38 0.16 266);
+    --amber-soft: oklch(0.86 0.14 88);
+
+    --background: oklch(0.972 0.009 255);
+    --foreground: oklch(0.22 0.04 265);
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
+    --card-foreground: oklch(0.22 0.04 265);
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.22 0.04 265);
+    --primary: var(--brand);
     --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.955 0.017 255);
+    --secondary-foreground: oklch(0.3 0.08 265);
+    --muted: oklch(0.955 0.012 255);
+    --muted-foreground: oklch(0.5 0.035 260);
+    --accent: oklch(0.95 0.07 90);
+    --accent-foreground: oklch(0.34 0.08 70);
     --destructive: oklch(0.577 0.245 27.325);
     --destructive-foreground: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.87 0 0);
-    --chart-1: oklch(0.646 0.222 41.116);
-    --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.87 0 0);
+    --border: oklch(0.915 0.016 255);
+    --input: oklch(0.9 0.02 255);
+    --ring: oklch(0.62 0.17 263);
+    --chart-1: oklch(0.52 0.2 263);
+    --chart-2: oklch(0.82 0.15 85);
+    --chart-3: oklch(0.65 0.15 200);
+    --chart-4: oklch(0.7 0.17 150);
+    --chart-5: oklch(0.65 0.2 20);
+    --radius: 0.75rem;
+    --sidebar: oklch(0.27 0.075 265);
+    --sidebar-foreground: oklch(0.93 0.015 260);
+    --sidebar-primary: var(--amber-soft);
+    --sidebar-primary-foreground: oklch(0.27 0.075 265);
+    --sidebar-accent: oklch(0.34 0.09 265);
+    --sidebar-accent-foreground: oklch(0.99 0 0);
+    --sidebar-border: oklch(0.34 0.07 265);
+    --sidebar-ring: var(--amber-soft);
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.145 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.145 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
+    --brand: oklch(0.62 0.19 263);
+    --brand-deep: oklch(0.4 0.16 266);
+
+    --background: oklch(0.2 0.045 265);
+    --foreground: oklch(0.96 0.01 260);
+    --card: oklch(0.25 0.055 265);
+    --card-foreground: oklch(0.96 0.01 260);
+    --popover: oklch(0.25 0.055 265);
+    --popover-foreground: oklch(0.96 0.01 260);
+    --primary: oklch(0.68 0.17 263);
+    --primary-foreground: oklch(0.16 0.04 265);
+    --secondary: oklch(0.3 0.06 265);
+    --secondary-foreground: oklch(0.96 0.01 260);
+    --muted: oklch(0.3 0.055 265);
+    --muted-foreground: oklch(0.72 0.03 260);
+    --accent: oklch(0.36 0.06 85);
+    --accent-foreground: oklch(0.94 0.08 88);
     --destructive: oklch(0.396 0.141 25.723);
     --destructive-foreground: oklch(0.637 0.237 25.331);
-    --border: oklch(0.269 0 0);
-    --input: oklch(0.269 0 0);
-    --ring: oklch(0.439 0 0);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.985 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.269 0 0);
-    --sidebar-ring: oklch(0.439 0 0);
+    --border: oklch(0.33 0.06 265);
+    --input: oklch(0.36 0.06 265);
+    --ring: oklch(0.62 0.15 263);
+    --chart-1: oklch(0.68 0.17 263);
+    --chart-2: oklch(0.84 0.14 88);
+    --chart-3: oklch(0.7 0.14 200);
+    --chart-4: oklch(0.72 0.16 150);
+    --chart-5: oklch(0.7 0.19 20);
+    --sidebar: oklch(0.17 0.05 265);
+    --sidebar-foreground: oklch(0.93 0.015 260);
+    --sidebar-primary: var(--amber-soft);
+    --sidebar-primary-foreground: oklch(0.2 0.05 265);
+    --sidebar-accent: oklch(0.27 0.07 265);
+    --sidebar-accent-foreground: oklch(0.99 0 0);
+    --sidebar-border: oklch(0.28 0.06 265);
+    --sidebar-ring: var(--amber-soft);
 }
 
 @layer base {
@@ -140,4 +157,61 @@
     body {
         @apply bg-background text-foreground;
     }
+}
+
+/*
+ * Aspecto de "tarjeta" para todos los recuadros de la aplicación (los que usan
+ * `rounded-xl border`): fondo blanco sobre el fondo azulado y sombra suave.
+ * Está en la capa de componentes, así que cualquier utilidad `bg-*` la sobrescribe.
+ */
+@layer components {
+    .rounded-xl.border {
+        background-color: var(--card);
+        box-shadow: 0 1px 2px oklch(0.3 0.05 265 / 0.06);
+    }
+}
+
+/*
+ * Formularios de acceso (login, registro, recuperación, 2FA): campos y botón más
+ * amplios y redondeados, con relleno suave. Va FUERA de las capas a propósito para
+ * ganarles a las utilidades del componente Input (h-9, rounded-md, bg-transparent)
+ * sin tocar ese componente, que usa el resto del sistema.
+ */
+.auth-form input:not([type='checkbox']) {
+    height: 2.75rem;
+    border-radius: 0.75rem;
+    background-color: var(--muted);
+    padding-inline: 1rem;
+}
+
+.auth-form button[type='submit'] {
+    height: 2.75rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+}
+
+.auth-form label {
+    font-weight: 500;
+}
+
+/*
+ * Tablas dentro de tarjetas (todas las del sistema): encabezado con un tinte azul
+ * muy suave y fila resaltada en ámbar claro al pasar el cursor. Va FUERA de las
+ * capas para ganarle al `bg-muted/50` que cada tabla trae en su encabezado.
+ * Las mezclas usan `oklab`: en `oklch` el azul mezclado con blanco gira el tono hacia rosa.
+ */
+.rounded-xl.border table thead {
+    background-color: color-mix(in oklab, var(--primary) 7%, var(--card));
+}
+
+.rounded-xl.border table thead th {
+    font-weight: 600;
+}
+
+.rounded-xl.border table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.rounded-xl.border table tbody tr:hover {
+    background-color: color-mix(in oklab, var(--accent) 55%, transparent);
 }

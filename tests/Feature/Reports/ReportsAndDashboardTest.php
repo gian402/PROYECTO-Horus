@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\EnrollmentRole;
 use App\Models\Certificate;
 use App\Models\Course;
 use App\Models\CourseEdition;
@@ -39,7 +40,22 @@ describe('reports', function () {
             ->where('totals.desaprobado', 1)
             ->where('totals.cursando', 1)
             ->where('totals.certificates', 1)
+            ->where('totals.speakers', 0)
             ->has('rows.data', 3));
+    });
+
+    it('counts speakers apart so they do not inflate the approval rate', function () {
+        // Hallado en el recorrido E2E: el ponente (aprobado sin nota) se sumaba a "Aprobados".
+        actingAsRole('Coordinador Académico');
+        Enrollment::factory()->for($this->pa2024, 'courseEdition')->create(['role' => EnrollmentRole::Ponente]);
+
+        $this->get(route('reports.index'))->assertInertia(fn ($page) => $page
+            ->where('totals.total', 4)
+            ->where('totals.speakers', 1)
+            ->where('totals.aprobado', 1)
+            ->where('totals.desaprobado', 1)
+            ->where('totals.cursando', 1)
+            ->has('rows.data', 4));
     });
 
     it('filters by year, course, status and certificate', function (array $filters, int $expected) {

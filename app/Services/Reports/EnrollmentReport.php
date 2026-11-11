@@ -2,6 +2,7 @@
 
 namespace App\Services\Reports;
 
+use App\Enums\EnrollmentRole;
 use App\Enums\EnrollmentStatus;
 use App\Models\Enrollment;
 use Illuminate\Database\Eloquent\Builder;
@@ -53,24 +54,29 @@ class EnrollmentReport
     }
 
     /**
-     * Totales por estado y certificados vigentes del conjunto filtrado (2 consultas agregadas).
+     * Totales del conjunto filtrado. Los estados (y el % de aprobación que se
+     * calcula con ellos) cuentan solo participantes: los ponentes no se califican
+     * y se informan aparte, igual que en el panel.
      *
      * @param  array{year: ?int, course_id: ?int, edition_id: ?int, status: ?string, certificate: ?string}  $filters
-     * @return array{total: int, cursando: int, aprobado: int, desaprobado: int, certificates: int}
+     * @return array{total: int, speakers: int, cursando: int, aprobado: int, desaprobado: int, certificates: int}
      */
     public static function totals(array $filters): array
     {
         $byStatus = self::query($filters)
             ->toBase()
-            ->selectRaw('status, count(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status');
+            ->selectRaw('role, status, count(*) as total')
+            ->groupBy('role', 'status')
+            ->get();
+
+        $participants = $byStatus->where('role', EnrollmentRole::Participante->value)->pluck('total', 'status');
 
         return [
-            'total' => (int) $byStatus->sum(),
-            'cursando' => (int) ($byStatus['cursando'] ?? 0),
-            'aprobado' => (int) ($byStatus['aprobado'] ?? 0),
-            'desaprobado' => (int) ($byStatus['desaprobado'] ?? 0),
+            'total' => (int) $byStatus->sum('total'),
+            'speakers' => (int) $byStatus->where('role', EnrollmentRole::Ponente->value)->sum('total'),
+            'cursando' => (int) ($participants['cursando'] ?? 0),
+            'aprobado' => (int) ($participants['aprobado'] ?? 0),
+            'desaprobado' => (int) ($participants['desaprobado'] ?? 0),
             'certificates' => self::query($filters)->whereHas('activeCertificate')->count(),
         ];
     }

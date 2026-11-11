@@ -41,6 +41,7 @@ const props = defineProps<{
     filters: ReportFilters;
     totals: {
         total: number;
+        speakers: number;
         cursando: number;
         aprobado: number;
         desaprobado: number;
@@ -149,6 +150,13 @@ const selectClass = 'h-9 rounded-md border bg-background px-2 text-sm';
                 <dt class="text-muted-foreground">Matrículas</dt>
                 <dd class="text-xl font-semibold tabular-nums">
                     {{ totals.total }}
+                </dd>
+                <dd
+                    v-if="totals.speakers"
+                    class="text-xs text-muted-foreground"
+                >
+                    incluye {{ totals.speakers }}
+                    {{ totals.speakers === 1 ? 'ponente' : 'ponentes' }}
                 </dd>
             </div>
             <div class="rounded-xl border p-3">

@@ -7,17 +7,16 @@ import {
     FileUp,
     GraduationCap,
     LayoutGrid,
+    Library,
     ShieldCheck,
     Users,
 } from '@lucide/vue';
 import { computed } from 'vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavMain from '@/components/NavMain.vue';
-import NavUser from '@/components/NavUser.vue';
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
@@ -32,7 +31,7 @@ import { index as reportsIndex } from '@/routes/reports';
 import { index as studentsIndex } from '@/routes/students';
 import { index as teachersIndex } from '@/routes/teachers';
 import { index as usersIndex } from '@/routes/users';
-import type { NavItem } from '@/types';
+import type { NavGroup, NavItem } from '@/types';
 
 const { canAny } = usePermissions();
 
@@ -51,16 +50,25 @@ const allItems: NavItem[] = [
         permissions: ['editions.view', 'editions.manage'],
     },
     {
-        title: 'Cursos',
+        // Submenú: Cursos y Ponentes se tocan poco y se agrupan.
+        title: 'Catálogo',
         href: coursesIndex(),
-        icon: BookOpen,
-        permissions: ['courses.manage'],
-    },
-    {
-        title: 'Ponentes',
-        href: teachersIndex(),
-        icon: GraduationCap,
-        permissions: ['teachers.manage'],
+        icon: Library,
+        permissions: ['courses.manage', 'teachers.manage'],
+        children: [
+            {
+                title: 'Cursos',
+                href: coursesIndex(),
+                icon: BookOpen,
+                permissions: ['courses.manage'],
+            },
+            {
+                title: 'Ponentes',
+                href: teachersIndex(),
+                icon: GraduationCap,
+                permissions: ['teachers.manage'],
+            },
+        ],
     },
     {
         title: 'Reportes',
@@ -82,19 +90,50 @@ const allItems: NavItem[] = [
     },
 ];
 
-const mainNavItems = computed(() =>
-    allItems.filter(
-        (item) => !item.permissions || canAny(item.permissions),
-    ),
+// Secciones del menú; las que quedan vacías para el rol del usuario no se muestran.
+const sections: { label: string; titles: string[] }[] = [
+    { label: 'Principal', titles: ['Panel'] },
+    {
+        label: 'Gestión académica',
+        titles: ['Participantes', 'Ediciones', 'Catálogo'],
+    },
+    { label: 'Análisis', titles: ['Reportes', 'Importar'] },
+    { label: 'Administración', titles: ['Usuarios'] },
+];
+
+const navGroups = computed<NavGroup[]>(() =>
+    sections
+        .map((section) => ({
+            label: section.label,
+            items: allItems
+                .filter(
+                    (item) =>
+                        section.titles.includes(item.title) &&
+                        (!item.permissions || canAny(item.permissions)),
+                )
+                .map((item) => ({
+                    ...item,
+                    // Solo los submenús que el rol puede usar.
+                    children: item.children?.filter(
+                        (child) =>
+                            !child.permissions || canAny(child.permissions),
+                    ),
+                })),
+        }))
+        .filter((group) => group.items.length > 0),
 );
 </script>
 
 <template>
-    <Sidebar collapsible="icon" variant="inset">
-        <SidebarHeader>
+    <Sidebar collapsible="icon" variant="sidebar">
+        <SidebarHeader class="px-3 pt-4 pb-2">
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton size="lg" as-child>
+                    <SidebarMenuButton
+                        size="lg"
+                        as-child
+                        class="hover:bg-sidebar-accent/60"
+                    >
                         <Link :href="dashboard()">
                             <AppLogo />
                         </Link>
@@ -104,12 +143,8 @@ const mainNavItems = computed(() =>
         </SidebarHeader>
 
         <SidebarContent>
-            <NavMain :items="mainNavItems" />
+            <NavMain :groups="navGroups" />
         </SidebarContent>
-
-        <SidebarFooter>
-            <NavUser />
-        </SidebarFooter>
     </Sidebar>
     <slot />
 </template>

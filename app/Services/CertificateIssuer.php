@@ -12,6 +12,7 @@ use BaconQrCode\Writer;
 use Barryvdh\DomPDF\Facade\Pdf;
 use DomainException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -94,6 +95,9 @@ class CertificateIssuer
 
         $verifyUrl = route('certificates.verify', $certificate->unique_hash);
 
+        // dompdf guarda aquí las fuentes que registra (Montserrat); sin la carpeta falla.
+        File::ensureDirectoryExists(storage_path('fonts'));
+
         return Pdf::loadView('pdf.certificate', [
             'certificate' => $certificate,
             'enrollment' => $certificate->enrollment,
@@ -102,7 +106,11 @@ class CertificateIssuer
             'course' => $certificate->enrollment->courseEdition->course,
             'verifyUrl' => $verifyUrl,
             'qrDataUri' => 'data:image/svg+xml;base64,'.base64_encode($this->qrSvg($verifyUrl)),
-        ])->setPaper('a4', 'landscape')->output();
+        ])
+            ->setPaper('a4', 'landscape')
+            // Incrustar solo los glifos usados: de ~1,1 MB a unas decenas de KB por PDF.
+            ->setOption('isFontSubsettingEnabled', true)
+            ->output();
     }
 
     /**

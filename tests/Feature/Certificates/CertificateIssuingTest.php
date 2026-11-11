@@ -2,6 +2,7 @@
 
 use App\Models\Certificate;
 use App\Models\Enrollment;
+use App\Models\Student;
 use App\Models\Teacher;
 use App\Services\CertificateIssuer;
 use Illuminate\Support\Facades\Storage;
@@ -20,6 +21,35 @@ describe('service', function () {
         expect($certificate->pdf_path)->toBe("certificates/{$certificate->unique_hash}.pdf");
         Storage::disk(CertificateIssuer::DISK)->assertExists($certificate->pdf_path);
         expect(Storage::disk(CertificateIssuer::DISK)->get($certificate->pdf_path))->toStartWith('%PDF');
+    });
+
+    it('renders the certificate on exactly one A4 landscape page with subset fonts', function () {
+        // Regresión: con box-sizing/height:100% dompdf desbordaba el marco a una segunda página.
+        // Se parte de una caché de fuentes vacía: así se comprueba de verdad que dompdf registra
+        // Montserrat desde resources/fonts (con la ruta mal, vuelve a DejaVu sin avisar).
+        foreach (glob(storage_path('fonts').'/{montserrat_*,installed-fonts.json}', GLOB_BRACE) ?: [] as $cached) {
+            @unlink($cached);
+        }
+
+        $certificate = $this->issuer->issue(Enrollment::factory()->approved(16)->create());
+        $pdf = Storage::disk(CertificateIssuer::DISK)->get($certificate->pdf_path);
+
+        expect(preg_match_all('#/Type\s*/Page\b#', $pdf))->toBe(1)
+            ->and(strlen($pdf))->toBeLessThan(200_000)
+            // La letra del sistema, en normal y en negrita (archivos en resources/fonts/montserrat).
+            ->and($pdf)->toContain('Montserrat-Regular')->toContain('Montserrat-Bold');
+    });
+
+    it('keeps a very long participant name on a single page', function () {
+        // Montserrat es más ancha que la letra anterior: un nombre largo se parte en dos líneas.
+        $student = Student::factory()->create([
+            'first_name' => 'María de los Ángeles Guadalupe Concepción',
+            'last_name' => 'Fernández de Córdoba y Santa Cruz',
+        ]);
+        $certificate = $this->issuer->issue(Enrollment::factory()->for($student)->approved(18)->create());
+        $pdf = Storage::disk(CertificateIssuer::DISK)->get($certificate->pdf_path);
+
+        expect(preg_match_all('#/Type\s*/Page\b#', $pdf))->toBe(1);
     });
 
     it('refuses to issue for enrollments that are not approved', function (?float $grade) {

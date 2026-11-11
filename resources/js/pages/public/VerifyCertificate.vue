@@ -2,7 +2,6 @@
 import { Head } from '@inertiajs/vue3';
 import { CircleCheck, CircleHelp, CircleX } from '@lucide/vue';
 import { computed } from 'vue';
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
 import { formatDate, formatPeriod } from '@/lib/format';
 import type { VerificationStatus, VerifiedCertificate } from '@/types';
 
@@ -42,28 +41,37 @@ const view = computed(
     </Head>
 
     <main
-        class="flex min-h-svh flex-col items-center justify-center bg-muted/40 p-4"
+        class="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-linear-to-br from-[oklch(0.5_0.2_263)] via-[oklch(0.62_0.17_252)] to-[oklch(0.82_0.1_235)] p-4 dark:from-[oklch(0.17_0.05_265)] dark:via-[oklch(0.22_0.07_265)] dark:to-[oklch(0.3_0.09_262)]"
     >
-        <div class="w-full max-w-lg space-y-6">
-            <div class="flex items-center justify-center gap-2">
-                <div
-                    class="flex size-9 items-center justify-center rounded-md bg-primary text-primary-foreground"
-                >
-                    <AppLogoIcon class="size-5 fill-current" />
+        <div
+            class="relative w-full max-w-lg space-y-5 rounded-[2rem] bg-card p-6 shadow-2xl shadow-black/20 sm:p-8"
+        >
+            <div class="flex items-center gap-3">
+                <img
+                    src="/images/horus-logo.png"
+                    alt="Horus Group"
+                    class="h-12 w-auto"
+                />
+                <div class="leading-tight">
+                    <p class="text-lg font-bold text-primary">
+                        Horus Group SRL
+                    </p>
+                    <p class="text-xs text-muted-foreground">
+                        Verificación de certificados
+                    </p>
                 </div>
-                <span class="text-lg font-semibold">Horus Group SRL</span>
             </div>
 
             <section
-                class="rounded-xl border p-5"
+                class="rounded-2xl border p-5"
                 :class="view.tone"
                 role="status"
                 aria-live="polite"
             >
-                <div class="flex items-start gap-3">
-                    <component :is="view.icon" class="mt-0.5 size-6 shrink-0" />
+                <div class="flex items-start gap-4">
+                    <component :is="view.icon" class="size-10 shrink-0" />
                     <div>
-                        <h1 class="text-lg font-semibold">{{ view.title }}</h1>
+                        <h1 class="text-xl font-bold">{{ view.title }}</h1>
                         <p class="mt-1 text-sm">{{ view.text }}</p>
                     </div>
                 </div>
@@ -71,7 +79,7 @@ const view = computed(
 
             <dl
                 v-if="certificate"
-                class="grid gap-3 rounded-xl border bg-background p-5 text-sm"
+                class="grid gap-4 rounded-2xl bg-muted/60 p-5 text-sm"
             >
                 <div>
                     <dt class="text-muted-foreground">
@@ -81,15 +89,17 @@ const view = computed(
                                 : 'Participante'
                         }}
                     </dt>
-                    <dd class="font-medium">{{ certificate.participant }}</dd>
+                    <dd class="text-base font-semibold">
+                        {{ certificate.participant }}
+                    </dd>
                 </div>
                 <div>
                     <dt class="text-muted-foreground">Capacitación</dt>
-                    <dd class="font-medium">{{ certificate.course }}</dd>
+                    <dd class="font-semibold">{{ certificate.course }}</dd>
                 </div>
                 <div>
                     <dt class="text-muted-foreground">Periodo</dt>
-                    <dd>
+                    <dd class="font-medium">
                         {{
                             formatPeriod(
                                 certificate.start_date,
@@ -99,29 +109,29 @@ const view = computed(
                         }}
                     </dd>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
+                <div class="grid grid-cols-2 gap-4">
                     <div>
                         <dt class="text-muted-foreground">
                             Código de registro
                         </dt>
-                        <dd class="font-mono">
+                        <dd class="font-mono text-xs font-medium sm:text-sm">
                             {{ certificate.registration_code }}
                         </dd>
                     </div>
                     <div>
                         <dt class="text-muted-foreground">Fecha de emisión</dt>
-                        <dd>{{ formatDate(certificate.issued_at) }}</dd>
+                        <dd class="font-medium">
+                            {{ formatDate(certificate.issued_at) }}
+                        </dd>
                     </div>
                 </div>
                 <div v-if="certificate.revoked_at">
                     <dt class="text-muted-foreground">Fecha de anulación</dt>
-                    <dd>{{ formatDate(certificate.revoked_at) }}</dd>
+                    <dd class="font-medium">
+                        {{ formatDate(certificate.revoked_at) }}
+                    </dd>
                 </div>
             </dl>
-
-            <p class="text-center text-xs text-muted-foreground">
-                Verificación pública de certificados · Horus Group SRL
-            </p>
         </div>
     </main>
 </template>

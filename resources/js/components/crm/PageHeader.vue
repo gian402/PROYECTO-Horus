@@ -7,7 +7,7 @@ defineProps<{ title: string; description?: string }>();
         class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"
     >
         <div class="space-y-1">
-            <h1 class="text-xl font-semibold tracking-tight">{{ title }}</h1>
+            <h1 class="text-2xl font-bold tracking-tight">{{ title }}</h1>
             <p v-if="description" class="text-sm text-muted-foreground">
                 {{ description }}
             </p>

@@ -231,8 +231,12 @@ function destroyEdition(): void {
     });
 }
 
+// Solo participantes: los ponentes no se califican (igual que panel y reportes).
 const approvedCount = computed(
-    () => props.enrollments.filter((e) => e.status === 'aprobado').length,
+    () =>
+        props.enrollments.filter(
+            (e) => e.role === 'participante' && e.status === 'aprobado',
+        ).length,
 );
 </script>
 
@@ -566,6 +570,8 @@ const approvedCount = computed(
                     v-model="reason"
                     maxlength="255"
                     placeholder="Ej. Corrección del nombre del participante"
+                    @input="reasonError = undefined"
+                    @keydown.enter.prevent="!reasonProcessing && submitReason()"
                 />
                 <InputError :message="reasonError" />
             </div>

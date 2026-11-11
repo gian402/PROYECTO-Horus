@@ -79,6 +79,14 @@ Columnas: `dni, nombres, apellidos, email, telefono, codigo_curso, fecha_inicio,
 
 En la pantalla de una edición se puede **matricular como ponente**. El ponente recibe código y certificado (con el texto «por su participación como ponente»), no se califica y figura como aprobado. Los indicadores del panel cuentan solo a los participantes.
 
+## Diseño y fuentes
+
+- **Paleta:** azul (color principal, menú lateral azul marino) y ámbar claro (acento). Todo sale de las variables de [resources/css/app.css](../resources/css/app.css); para retocar la marca basta cambiarlas ahí. Hay modo claro y oscuro (botón sol/luna en la barra superior).
+- **Fuente:** Montserrat, declarada en `vite.config.ts` (la descarga el build y la aloja en `public/build`).
+- **Logo:** `public/images/horus-logo.png` (menú, login, registro, panel, verificación pública y pestaña del navegador).
+- **Panel:** tendencias del mes frente al anterior, gráfico mensual del año, anillo de matrículas por estado, actividad reciente y tabla de ediciones. Los gráficos son SVG propios (sin librerías). Todo respeta el alcance del usuario.
+- **Certificado PDF:** usa Montserrat Regular y Bold desde `resources/fonts/montserrat/` (licencia OFL incluida). dompdf las registra en `storage/fonts`, carpeta versionada solo por su `.gitignore`. La URL de la fuente en la plantilla es `file://` + ruta absoluta; con una barra de más dompdf no la encuentra y cambia de letra sin avisar (la prueba de certificados lo vigila).
+
 ## Idioma
 
 La interfaz está en español: las páginas del kit están traducidas y los módulos se escribieron en español. Los mensajes de validación vienen de `laravel-lang` (`lang/es`), con atributos propios en cada Form Request.
