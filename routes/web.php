@@ -8,20 +8,39 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EnrollmentController;
 use App\Http\Controllers\GradeController;
 use App\Http\Controllers\ImportController;
+use App\Http\Controllers\Public\ParticipantPortalController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\UserController;
+use App\Http\Middleware\EnsureParticipantSession;
 use Illuminate\Support\Facades\Route;
 
-// CRM interno: no hay página pública. La raíz lleva al panel (o al login si no hay sesión).
+// El CRM en sí (/dashboard y todo lo demás) es solo para el personal.
+// Lo público son dos cosas sin cuenta: verificar un certificado, y el
+// portal del participante para consultar lo suyo.
 Route::redirect('/', '/dashboard')->name('home');
 
-// Única ruta pública: verificación de certificados (solo lectura, con límite de consultas).
+// Verificación pública de certificados (solo lectura, con límite de consultas).
 Route::get('validar/{hash}', CertificateVerificationController::class)
     ->where('hash', '[0-9a-f]{64}')
     ->middleware('throttle:verification')
     ->name('certificates.verify');
+
+// Portal del participante: identificación con DNI + código de registro, sin cuenta.
+Route::prefix('mi-cuenta')->name('portal.')->group(function () {
+    Route::get('/', [ParticipantPortalController::class, 'create'])->name('login');
+    Route::post('/', [ParticipantPortalController::class, 'store'])
+        ->middleware('throttle:portal-login')
+        ->name('authenticate');
+    Route::post('salir', [ParticipantPortalController::class, 'destroy'])->name('logout');
+
+    Route::middleware(EnsureParticipantSession::class)->group(function () {
+        Route::get('panel', [ParticipantPortalController::class, 'dashboard'])->name('dashboard');
+        Route::get('certificados/{certificate}', [ParticipantPortalController::class, 'downloadCertificate'])
+            ->name('certificates.download');
+    });
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');

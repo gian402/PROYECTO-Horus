@@ -131,6 +131,14 @@ export type EditionRow = {
     end_date: string | null;
     year: number;
     enrollments_count: number;
+    finished: boolean;
+};
+
+export type CourseFinishedSummary = {
+    id: number;
+    code: string;
+    name: string;
+    finished_count: number;
 };
 
 export type EditionFormData = {
@@ -149,6 +157,7 @@ export type EditionEnrollment = {
     id: number;
     registration_code: string;
     grade: string | null;
+    attended: boolean | null;
     status: EnrollmentStatus;
     role: EnrollmentRole;
     historical: boolean;
@@ -180,4 +189,17 @@ export type TeacherOption = {
     id: number;
     full_name: string;
     user_id: number | null;
+};
+
+/** Datos propios del participante autenticado en el portal público (sin cuenta). */
+export type PortalStudent = {
+    id: number;
+    full_name: string;
+    dni: string;
+};
+
+export type PortalEnrollment = StudentEnrollment & {
+    edition: StudentEnrollment['edition'] & {
+        teacher: { id: number; full_name: string } | null;
+    };
 };

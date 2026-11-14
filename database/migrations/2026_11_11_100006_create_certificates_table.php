@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\Sql;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +29,17 @@ return new class extends Migration
             $table->index('enrollment_id');
         });
 
-        DB::statement('CREATE UNIQUE INDEX certificates_one_active_per_enrollment ON certificates (enrollment_id) WHERE revoked_at IS NULL');
+        if (Sql::isPgsql()) {
+            // Índice único parcial: solo un certificado vigente (no anulado) por matrícula.
+            DB::statement('CREATE UNIQUE INDEX certificates_one_active_per_enrollment ON certificates (enrollment_id) WHERE revoked_at IS NULL');
+        } else {
+            // MySQL no soporta índices únicos parciales. Se simula con una columna generada
+            // que vale enrollment_id solo mientras el certificado está vigente (o NULL si no):
+            // el índice único permite muchos NULL, así que solo se compite por el valor vigente.
+            DB::statement('ALTER TABLE certificates ADD COLUMN active_enrollment_id BIGINT UNSIGNED GENERATED ALWAYS AS (CASE WHEN revoked_at IS NULL THEN enrollment_id END) VIRTUAL');
+            DB::statement('ALTER TABLE certificates ADD UNIQUE INDEX certificates_one_active_per_enrollment (active_enrollment_id)');
+        }
+
         DB::statement('ALTER TABLE certificates ADD CONSTRAINT certificates_revoked_after_issued CHECK (revoked_at IS NULL OR revoked_at >= issued_at)');
     }
 

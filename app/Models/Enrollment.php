@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property EnrollmentStatus $status
  * @property EnrollmentRole $role
  */
-#[Fillable(['student_id', 'course_edition_id', 'registration_code', 'grade', 'role', 'historical'])]
+#[Fillable(['student_id', 'course_edition_id', 'registration_code', 'grade', 'attended', 'role', 'historical'])]
 class Enrollment extends Model
 {
     /** @use HasFactory<EnrollmentFactory> */
@@ -60,6 +60,7 @@ class Enrollment extends Model
     {
         return [
             'grade' => 'decimal:2',
+            'attended' => 'boolean',
             'status' => EnrollmentStatus::class,
             'role' => EnrollmentRole::class,
             'historical' => 'boolean',

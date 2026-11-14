@@ -15,14 +15,15 @@ trait InteractsWithToasts
     }
 
     /**
-     * SQLSTATE de PostgreSQL al borrar un registro referenciado:
-     * 23001 = restrict_violation (ON DELETE RESTRICT), 23503 = foreign_key_violation (NO ACTION).
+     * SQLSTATE al borrar un registro referenciado:
+     * Postgres: 23001 = restrict_violation (ON DELETE RESTRICT), 23503 = foreign_key_violation (NO ACTION).
+     * MySQL: 23000 = integrity_constraint_violation (genérico; en un delete casi siempre es la FK).
      */
-    private const REFERENCED_ROW_CODES = ['23001', '23503'];
+    private const REFERENCED_ROW_CODES = ['23001', '23503', '23000'];
 
     /**
-     * Elimina el modelo. Si PostgreSQL lo impide por una FK, muestra un aviso
-     * en lugar de un error 500. Devuelve true si se eliminó.
+     * Elimina el modelo. Si la FK lo impide, muestra un aviso en lugar de un
+     * error 500. Devuelve true si se eliminó.
      *
      * Se ejecuta en su propia transacción (SAVEPOINT si ya hay una abierta) para que
      * el fallo no deje abortada la transacción externa en PostgreSQL.

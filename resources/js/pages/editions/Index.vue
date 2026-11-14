@@ -9,7 +9,12 @@ import Pagination from '@/components/crm/Pagination.vue';
 import { Button } from '@/components/ui/button';
 import { formatPeriod } from '@/lib/format';
 import { index } from '@/routes/editions';
-import type { EditionOptions, EditionRow, Paginated } from '@/types';
+import type {
+    CourseFinishedSummary,
+    EditionOptions,
+    EditionRow,
+    Paginated,
+} from '@/types';
 
 const props = defineProps<{
     editions: Paginated<EditionRow>;
@@ -17,9 +22,11 @@ const props = defineProps<{
         course_id: number | null;
         teacher_id: number | null;
         year: number | null;
+        status: 'en_curso' | 'finalizada' | null;
     };
     options: EditionOptions;
     years: number[];
+    finishedByCourse: CourseFinishedSummary[];
     can: { create: boolean };
 }>();
 
@@ -36,10 +43,17 @@ watch(form, (value) => {
             course_id: value.course_id || undefined,
             teacher_id: value.teacher_id || undefined,
             year: value.year || undefined,
+            status: value.status || undefined,
         },
         { preserveState: true, preserveScroll: true, replace: true },
     );
 });
+
+const statusTabs: { value: typeof form.status; label: string }[] = [
+    { value: null, label: 'Todas' },
+    { value: 'en_curso', label: 'En curso' },
+    { value: 'finalizada', label: 'Finalizadas' },
+];
 
 const selectClass = 'h-9 rounded-md border bg-background px-2 text-sm';
 </script>
@@ -60,6 +74,43 @@ const selectClass = 'h-9 rounded-md border bg-background px-2 text-sm';
                 </Button>
             </template>
         </PageHeader>
+
+        <div
+            v-if="finishedByCourse.length"
+            class="flex flex-col gap-2 rounded-xl border p-4"
+        >
+            <h2 class="text-sm font-semibold">Ediciones finalizadas por curso</h2>
+            <ul class="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+                <li
+                    v-for="c in finishedByCourse"
+                    :key="c.id"
+                    class="text-muted-foreground"
+                >
+                    <span class="font-mono">{{ c.code }}</span>
+                    {{ c.name }}
+                    <span class="font-semibold text-foreground">{{
+                        c.finished_count
+                    }}</span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="flex gap-1 rounded-lg border bg-muted/40 p-1 w-fit">
+            <button
+                v-for="tab in statusTabs"
+                :key="tab.label"
+                type="button"
+                class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
+                :class="
+                    form.status === tab.value
+                        ? 'bg-background shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                "
+                @click="form.status = tab.value"
+            >
+                {{ tab.label }}
+            </button>
+        </div>
 
         <div class="flex flex-wrap gap-2">
             <select
@@ -138,8 +189,13 @@ const selectClass = 'h-9 rounded-md border bg-background px-2 text-sm';
                                 }}</span>
                                 · {{ edition.course.name }}
                             </Link>
-                            <div class="text-muted-foreground">
-                                Año {{ edition.year }}
+                            <div class="flex items-center gap-2 text-muted-foreground">
+                                <span>Año {{ edition.year }}</span>
+                                <span
+                                    v-if="edition.finished"
+                                    class="rounded-md bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground"
+                                    >Finalizada</span
+                                >
                             </div>
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap">

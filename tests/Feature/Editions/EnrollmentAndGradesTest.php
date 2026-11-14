@@ -120,3 +120,45 @@ describe('grades', function () {
             ->and($other->fresh()->grade)->toBeNull();
     });
 });
+
+describe('attendance', function () {
+    it('saves attendance alongside grades in the same request', function () {
+        actingAsRole('Coordinador Académico');
+        [$present, $absent, $unset] = Enrollment::factory()->count(3)->for($this->edition, 'courseEdition')->create();
+
+        $this->put(route('editions.grades.update', $this->edition), [
+            'grades' => [$present->id => '15', $absent->id => '10', $unset->id => ''],
+            'attendance' => [$present->id => '1', $absent->id => '0', $unset->id => ''],
+        ])->assertSessionHasNoErrors();
+
+        expect($present->fresh()->attended)->toBeTrue()
+            ->and($absent->fresh()->attended)->toBeFalse()
+            ->and($unset->fresh()->attended)->toBeNull();
+    });
+
+    it('accepts attendance without touching grades', function () {
+        actingAsRole('Coordinador Académico');
+        $e = Enrollment::factory()->for($this->edition, 'courseEdition')->approved()->create();
+
+        $this->put(route('editions.grades.update', $this->edition), [
+            'grades' => [$e->id => $e->grade],
+            'attendance' => [$e->id => '1'],
+        ])->assertSessionHasNoErrors();
+
+        expect($e->fresh()->attended)->toBeTrue()
+            ->and($e->fresh()->grade)->toBe($e->grade);
+    });
+
+    it('rejects attendance for enrollments from another edition', function () {
+        actingAsRole('Coordinador Académico');
+        $own = Enrollment::factory()->for($this->edition, 'courseEdition')->create();
+        $foreign = Enrollment::factory()->create();
+
+        $this->put(route('editions.grades.update', $this->edition), [
+            'grades' => [$own->id => ''],
+            'attendance' => [$foreign->id => '1'],
+        ])->assertSessionHasErrors('grades');
+
+        expect($foreign->fresh()->attended)->toBeNull();
+    });
+});

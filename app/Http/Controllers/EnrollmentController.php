@@ -8,6 +8,7 @@ use App\Http\Controllers\Concerns\InteractsWithToasts;
 use App\Models\CourseEdition;
 use App\Models\Enrollment;
 use App\Models\Student;
+use App\Support\Sql;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -34,9 +35,9 @@ class EnrollmentController extends Controller
         $students = Student::query()
             ->whereDoesntHave('enrollments', fn ($q) => $q->where('course_edition_id', $edition->id))
             ->where(fn ($q) => $q
-                ->where('dni', 'ilike', "{$term}%")
-                ->orWhereRaw("(last_name || ' ' || first_name) ilike ?", ["%{$term}%"])
-                ->orWhereRaw("(first_name || ' ' || last_name) ilike ?", ["%{$term}%"]))
+                ->where('dni', Sql::likeOperator(), "{$term}%")
+                ->orWhereRaw(Sql::concatWithSpace('last_name', 'first_name').' '.Sql::likeOperator().' ?', ["%{$term}%"])
+                ->orWhereRaw(Sql::concatWithSpace('first_name', 'last_name').' '.Sql::likeOperator().' ?', ["%{$term}%"]))
             ->orderBy('last_name')
             ->limit(10)
             ->get(['id', 'dni', 'first_name', 'last_name'])

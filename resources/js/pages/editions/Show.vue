@@ -98,14 +98,21 @@ function enroll(student: StudentSearchResult): void {
     );
 }
 
-/* ---------- Notas ---------- */
+/* ---------- Notas y asistencia ---------- */
 const grades = reactive<Record<number, string>>({});
+const attendance = reactive<Record<number, string>>({});
 const gradeErrors = ref<Record<string, string>>({});
 const savingGrades = ref(false);
+
+// '' = sin registrar, '1' = asistió, '0' = no asistió.
+function attendedToOption(value: boolean | null): string {
+    return value === null ? '' : value ? '1' : '0';
+}
 
 function resetGrades(): void {
     for (const e of props.enrollments) {
         grades[e.id] = e.grade ?? '';
+        attendance[e.id] = attendedToOption(e.attended);
     }
 }
 
@@ -113,7 +120,11 @@ resetGrades();
 watch(() => props.enrollments, resetGrades);
 
 const dirtyGrades = computed(() =>
-    props.enrollments.filter((e) => (grades[e.id] ?? '') !== (e.grade ?? '')),
+    props.enrollments.filter(
+        (e) =>
+            (grades[e.id] ?? '') !== (e.grade ?? '') ||
+            (attendance[e.id] ?? '') !== attendedToOption(e.attended),
+    ),
 );
 
 function previewStatus(e: EditionEnrollment): EditionEnrollment['status'] {
@@ -132,15 +143,17 @@ function previewStatus(e: EditionEnrollment): EditionEnrollment['status'] {
 }
 
 function saveGrades(): void {
-    const payload: Record<number, string | null> = {};
+    const grPayload: Record<number, string | null> = {};
+    const atPayload: Record<number, string | null> = {};
 
     for (const e of dirtyGrades.value) {
-        payload[e.id] = grades[e.id] === '' ? null : grades[e.id];
+        grPayload[e.id] = grades[e.id] === '' ? null : grades[e.id];
+        atPayload[e.id] = attendance[e.id] === '' ? null : attendance[e.id];
     }
 
     router.put(
         GradeController.update.url(props.edition.id),
-        { grades: payload },
+        { grades: grPayload, attendance: atPayload },
         {
             preserveScroll: true,
             onStart: () => (savingGrades.value = true),
@@ -154,6 +167,46 @@ function saveGrades(): void {
 function gradeError(id: number): string | undefined {
     return gradeErrors.value[`grades.${id}`];
 }
+
+/**
+ * Bloquea la tecla ANTES de que se escriba (no corrige después): corregir
+ * en vivo vía v-model llega tarde si se escribe rápido, porque el input ya
+ * mostró el carácter antes de que la reactividad de Vue alcance a revertirlo.
+ */
+function blockInvalidGrade(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const inputEvent = event as InputEvent;
+
+    if (inputEvent.inputType?.startsWith('delete')) {
+        return;
+    }
+
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    const next =
+        input.value.slice(0, start) +
+        (inputEvent.data ?? '') +
+        input.value.slice(end);
+
+    if (next === '') {
+        return;
+    }
+
+    if (!/^[0-9]*[.,]?[0-9]{0,2}$/.test(next)) {
+        event.preventDefault();
+
+        return;
+    }
+
+    const num = Number(next.replace(',', '.'));
+
+    if (!Number.isNaN(num) && num > 20) {
+        event.preventDefault();
+    }
+}
+
+const selectClass =
+    'h-9 w-28 rounded-md border bg-background px-2 text-sm disabled:opacity-60';
 
 /* ---------- Certificados ---------- */
 function issue(e: EditionEnrollment): void {
@@ -355,7 +408,7 @@ const approvedCount = computed(
                     :disabled="dirtyGrades.length === 0 || savingGrades"
                     @click="saveGrades"
                 >
-                    Guardar notas
+                    Guardar cambios
                     <span v-if="dirtyGrades.length" class="tabular-nums"
                         >({{ dirtyGrades.length }})</span
                     >
@@ -380,6 +433,9 @@ const approvedCount = computed(
                             </th>
                             <th scope="col" class="px-4 py-3 font-medium">
                                 Nota (0–20)
+                            </th>
+                            <th scope="col" class="px-4 py-3 font-medium">
+                                Asistencia
                             </th>
                             <th scope="col" class="px-4 py-3 font-medium">
                                 Estado
@@ -431,7 +487,9 @@ const approvedCount = computed(
                                 <Input
                                     v-else-if="can.grade"
                                     v-model="grades[e.id]"
+                                    @beforeinput="blockInvalidGrade"
                                     inputmode="decimal"
+                                    maxlength="5"
                                     class="w-24 tabular-nums"
                                     :aria-label="`Nota de ${e.student.full_name}`"
                                     :aria-invalid="!!gradeError(e.id)"
@@ -443,6 +501,30 @@ const approvedCount = computed(
                                     class="mt-1"
                                     :message="gradeError(e.id)"
                                 />
+                            </td>
+                            <td class="px-4 py-3">
+                                <span
+                                    v-if="e.role === 'ponente'"
+                                    class="text-muted-foreground"
+                                    >No aplica</span
+                                >
+                                <select
+                                    v-else-if="can.grade"
+                                    v-model="attendance[e.id]"
+                                    :class="selectClass"
+                                    :aria-label="`Asistencia de ${e.student.full_name}`"
+                                >
+                                    <option value="">Sin registrar</option>
+                                    <option value="1">Asistió</option>
+                                    <option value="0">No asistió</option>
+                                </select>
+                                <span v-else class="text-muted-foreground">{{
+                                    e.attended === null
+                                        ? '—'
+                                        : e.attended
+                                          ? 'Asistió'
+                                          : 'No asistió'
+                                }}</span>
                             </td>
                             <td class="px-4 py-3">
                                 <StatusBadge

@@ -7,7 +7,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 
 /**
- * Registro masivo de notas de una edición: grades[enrollment_id] = nota | null.
+ * Registro masivo de notas y asistencia de una edición:
+ * grades[enrollment_id] = nota | null, attendance[enrollment_id] = asistió | null.
  * El estado académico NO se recibe: lo deriva el backend a partir de la nota.
  */
 class UpdateGradesRequest extends FormRequest
@@ -23,7 +24,11 @@ class UpdateGradesRequest extends FormRequest
             ->map(fn ($g) => is_string($g) ? (trim($g) === '' ? null : str_replace(',', '.', trim($g))) : $g)
             ->all();
 
-        $this->merge(['grades' => $grades]);
+        $attendance = collect((array) $this->input('attendance', []))
+            ->map(fn ($a) => $a === '' || $a === null ? null : filter_var($a, FILTER_VALIDATE_BOOLEAN))
+            ->all();
+
+        $this->merge(['grades' => $grades, 'attendance' => $attendance]);
     }
 
     /**
@@ -34,6 +39,8 @@ class UpdateGradesRequest extends FormRequest
         return [
             'grades' => ['required', 'array', 'min:1'],
             'grades.*' => ['nullable', 'numeric', 'decimal:0,2', 'between:0,20'],
+            'attendance' => ['sometimes', 'array'],
+            'attendance.*' => ['nullable', 'boolean'],
         ];
     }
 
@@ -41,15 +48,18 @@ class UpdateGradesRequest extends FormRequest
     {
         return [
             function (Validator $validator): void {
-                $ids = array_map('intval', array_keys((array) $this->input('grades', [])));
+                $gradeIds = array_map('intval', array_keys((array) $this->input('grades', [])));
+                $attendanceIds = array_map('intval', array_keys((array) $this->input('attendance', [])));
+                $ids = array_unique([...$gradeIds, ...$attendanceIds]);
+
                 $valid = $this->route('edition')->enrollments()->whereIn('id', $ids)->count();
 
-                if ($valid !== count(array_unique($ids))) {
+                if ($valid !== count($ids)) {
                     $validator->errors()->add('grades', 'Hay matrículas que no pertenecen a esta edición.');
                 }
 
                 // Los ponentes no se califican.
-                if ($this->route('edition')->enrollments()->whereIn('id', $ids)->where('role', EnrollmentRole::Ponente)->exists()) {
+                if ($this->route('edition')->enrollments()->whereIn('id', $gradeIds)->where('role', EnrollmentRole::Ponente)->exists()) {
                     $validator->errors()->add('grades', 'Los ponentes no se califican.');
                 }
             },
@@ -61,6 +71,6 @@ class UpdateGradesRequest extends FormRequest
      */
     public function attributes(): array
     {
-        return ['grades' => 'notas', 'grades.*' => 'nota'];
+        return ['grades' => 'notas', 'grades.*' => 'nota', 'attendance' => 'asistencia', 'attendance.*' => 'asistencia'];
     }
 }

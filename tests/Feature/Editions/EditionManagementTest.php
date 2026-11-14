@@ -82,6 +82,56 @@ it('shows only their own editions to a Ponente', function () {
     $this->get(route('editions.create'))->assertForbidden();
 });
 
+it('separates finished editions from ongoing ones', function () {
+    actingAsRole('Coordinador Académico');
+    $finished = CourseEdition::factory()->create(['start_date' => '2024-01-10', 'end_date' => '2024-01-20', 'year' => 2024]);
+    $ongoing = CourseEdition::factory()->create(['start_date' => now()->toDateString(), 'end_date' => now()->addDays(5)->toDateString(), 'year' => now()->year]);
+    $historical = CourseEdition::factory()->create(['start_date' => null, 'end_date' => null, 'year' => 2023]);
+
+    $this->get(route('editions.index', ['status' => 'finalizada']))
+        ->assertInertia(fn ($page) => $page
+            ->has('editions.data', 2)
+            ->where('editions.data.0.finished', true)
+            ->where('editions.data.1.finished', true));
+
+    $this->get(route('editions.index', ['status' => 'en_curso']))
+        ->assertInertia(fn ($page) => $page
+            ->has('editions.data', 1)
+            ->where('editions.data.0.id', $ongoing->id)
+            ->where('editions.data.0.finished', false));
+
+    $this->get(route('editions.index'))
+        ->assertInertia(fn ($page) => $page->has('editions.data', 3));
+
+    expect($finished->fresh()->isFinished())->toBeTrue()
+        ->and($historical->fresh()->isFinished())->toBeTrue()
+        ->and($ongoing->fresh()->isFinished())->toBeFalse();
+});
+
+it('counts finished editions per course, scoped to what the user can see', function () {
+    $pa = Course::factory()->create(['code' => 'PA']);
+    $inm = Course::factory()->create(['code' => 'INM']);
+
+    CourseEdition::factory()->for($pa)->create(['start_date' => '2024-01-10', 'end_date' => '2024-01-20', 'year' => 2024]);
+    CourseEdition::factory()->for($pa)->create(['start_date' => '2024-02-10', 'end_date' => '2024-02-20', 'year' => 2024]);
+    CourseEdition::factory()->for($inm)->create(['start_date' => '2024-01-10', 'end_date' => '2024-01-20', 'year' => 2024]);
+    CourseEdition::factory()->for($pa)->create(['start_date' => now()->toDateString(), 'end_date' => now()->addDays(5)->toDateString(), 'year' => now()->year]);
+
+    actingAsRole('Coordinador Académico');
+    $this->get(route('editions.index'))
+        ->assertInertia(fn ($page) => $page
+            ->has('finishedByCourse', 2)
+            ->where('finishedByCourse.0.code', 'PA')
+            ->where('finishedByCourse.0.finished_count', 2)
+            ->where('finishedByCourse.1.code', 'INM')
+            ->where('finishedByCourse.1.finished_count', 1));
+
+    // Un Ponente sin ediciones propias no ve el resumen de nadie más.
+    actingAsRole('Ponente');
+    $this->get(route('editions.index'))
+        ->assertInertia(fn ($page) => $page->has('finishedByCourse', 0));
+});
+
 it('refuses to delete an edition with enrollments', function () {
     actingAsRole('Coordinador Académico');
     $enrollment = Enrollment::factory()->create();

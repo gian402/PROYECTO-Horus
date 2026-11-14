@@ -59,6 +59,33 @@ class CourseEdition extends Model
     }
 
     /**
+     * Finalizada: su fecha de fin ya pasó, o es una edición histórica sin
+     * fechas (importada del Excel, siempre de un año anterior ya cerrado).
+     */
+    public function isFinished(): bool
+    {
+        // Comparación por fecha, no por instante: debe coincidir exactamente
+        // con scopeWhereFinished (una edición que termina hoy sigue "en curso").
+        return $this->end_date === null || $this->end_date->isBefore(today());
+    }
+
+    /**
+     * @param  Builder<CourseEdition>  $query
+     */
+    public function scopeWhereFinished(Builder $query): void
+    {
+        $query->where(fn (Builder $q) => $q->whereNull('end_date')->orWhere('end_date', '<', now()->toDateString()));
+    }
+
+    /**
+     * @param  Builder<CourseEdition>  $query
+     */
+    public function scopeWhereNotFinished(Builder $query): void
+    {
+        $query->whereNotNull('end_date')->where('end_date', '>=', now()->toDateString());
+    }
+
+    /**
      * Periodo legible: "del 01/02/2024 al 20/02/2024" o "en el año 2024".
      */
     public function periodText(): string

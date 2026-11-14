@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\Sql;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,7 @@ return new class extends Migration
 
         // El código forma parte del código de registro (HGC-{code}-NN-AAA):
         // solo mayúsculas y dígitos, sin guiones ni espacios.
-        DB::statement("ALTER TABLE courses ADD CONSTRAINT courses_code_format CHECK (code ~ '^[A-Z0-9]+$')");
+        DB::statement('ALTER TABLE courses ADD CONSTRAINT courses_code_format CHECK ('.Sql::regexCheck('code', '^[A-Z0-9]+$').')');
     }
 
     public function down(): void

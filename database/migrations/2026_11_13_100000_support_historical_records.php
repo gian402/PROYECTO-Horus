@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\Sql;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -20,14 +21,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement('ALTER TABLE courses DROP CONSTRAINT courses_code_format');
-        DB::statement("ALTER TABLE courses ADD CONSTRAINT courses_code_format CHECK (code ~ '^[A-Z0-9]+(-[A-Z0-9]+)*$')");
+        DB::statement(Sql::dropCheck('courses', 'courses_code_format'));
+        DB::statement('ALTER TABLE courses ADD CONSTRAINT courses_code_format CHECK ('.Sql::regexCheck('code', '^[A-Z0-9]+(-[A-Z0-9]+)*$').')');
 
         Schema::table('course_editions', function (Blueprint $table) {
             $table->date('start_date')->nullable()->change();
             $table->date('end_date')->nullable()->change();
         });
-        DB::statement('ALTER TABLE course_editions DROP CONSTRAINT course_editions_dates_check');
+        DB::statement(Sql::dropCheck('course_editions', 'course_editions_dates_check'));
         DB::statement('ALTER TABLE course_editions ADD CONSTRAINT course_editions_dates_check CHECK ((start_date IS NULL) = (end_date IS NULL) AND (end_date IS NULL OR end_date >= start_date))');
 
         Schema::table('enrollments', function (Blueprint $table) {
@@ -35,27 +36,27 @@ return new class extends Migration
             $table->boolean('historical')->default(false);
         });
         DB::statement("ALTER TABLE enrollments ADD CONSTRAINT enrollments_role_values CHECK (role IN ('participante', 'ponente'))");
-        DB::statement('ALTER TABLE enrollments DROP CONSTRAINT enrollments_grade_status_consistency');
+        DB::statement(Sql::dropCheck('enrollments', 'enrollments_grade_status_consistency'));
         DB::statement("ALTER TABLE enrollments ADD CONSTRAINT enrollments_grade_status_consistency CHECK (((grade IS NULL) = (status = 'cursando')) OR (grade IS NULL AND status = 'aprobado' AND (historical OR role = 'ponente')))");
     }
 
     public function down(): void
     {
-        DB::statement('ALTER TABLE enrollments DROP CONSTRAINT enrollments_grade_status_consistency');
+        DB::statement(Sql::dropCheck('enrollments', 'enrollments_grade_status_consistency'));
         DB::statement("ALTER TABLE enrollments ADD CONSTRAINT enrollments_grade_status_consistency CHECK ((grade IS NULL) = (status = 'cursando'))");
-        DB::statement('ALTER TABLE enrollments DROP CONSTRAINT enrollments_role_values');
+        DB::statement(Sql::dropCheck('enrollments', 'enrollments_role_values'));
         Schema::table('enrollments', function (Blueprint $table) {
             $table->dropColumn(['role', 'historical']);
         });
 
-        DB::statement('ALTER TABLE course_editions DROP CONSTRAINT course_editions_dates_check');
+        DB::statement(Sql::dropCheck('course_editions', 'course_editions_dates_check'));
         Schema::table('course_editions', function (Blueprint $table) {
             $table->date('start_date')->nullable(false)->change();
             $table->date('end_date')->nullable(false)->change();
         });
         DB::statement('ALTER TABLE course_editions ADD CONSTRAINT course_editions_dates_check CHECK (end_date >= start_date)');
 
-        DB::statement('ALTER TABLE courses DROP CONSTRAINT courses_code_format');
-        DB::statement("ALTER TABLE courses ADD CONSTRAINT courses_code_format CHECK (code ~ '^[A-Z0-9]+$')");
+        DB::statement(Sql::dropCheck('courses', 'courses_code_format'));
+        DB::statement('ALTER TABLE courses ADD CONSTRAINT courses_code_format CHECK ('.Sql::regexCheck('code', '^[A-Z0-9]+$').')');
     }
 };

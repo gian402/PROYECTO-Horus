@@ -7,6 +7,7 @@ use App\Http\Controllers\Concerns\InteractsWithToasts;
 use App\Http\Requests\Users\UpdateUserRequest;
 use App\Models\Teacher;
 use App\Models\User;
+use App\Support\Sql;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,8 +29,8 @@ class UserController extends Controller
         $users = User::query()
             ->with(['roles:id,name', 'teacher:id,user_id,full_name'])
             ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q
-                ->where('name', 'ilike', "%{$search}%")
-                ->orWhere('email', 'ilike', "%{$search}%")))
+                ->where('name', Sql::likeOperator(), "%{$search}%")
+                ->orWhere('email', Sql::likeOperator(), "%{$search}%")))
             ->orderBy('name')
             ->paginate(15)
             ->withQueryString()

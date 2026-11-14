@@ -6,6 +6,7 @@ use App\Http\Controllers\Concerns\InteractsWithToasts;
 use App\Http\Requests\Students\StudentRequest;
 use App\Models\Enrollment;
 use App\Models\Student;
+use App\Support\Sql;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -25,10 +26,10 @@ class StudentController extends Controller
         $students = Student::query()
             ->withCount('enrollments')
             ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q
-                ->where('dni', 'ilike', "{$search}%")
-                ->orWhere('first_name', 'ilike', "%{$search}%")
-                ->orWhere('last_name', 'ilike', "%{$search}%")
-                ->orWhereRaw("(first_name || ' ' || last_name) ilike ?", ["%{$search}%"])))
+                ->where('dni', Sql::likeOperator(), "{$search}%")
+                ->orWhere('first_name', Sql::likeOperator(), "%{$search}%")
+                ->orWhere('last_name', Sql::likeOperator(), "%{$search}%")
+                ->orWhereRaw(Sql::concatWithSpace('first_name', 'last_name').' '.Sql::likeOperator().' ?', ["%{$search}%"])))
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->paginate(15)

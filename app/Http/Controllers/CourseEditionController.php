@@ -8,6 +8,7 @@ use App\Models\Course;
 use App\Models\CourseEdition;
 use App\Models\Enrollment;
 use App\Models\Teacher;
+use App\Support\Sql;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -26,6 +27,9 @@ class CourseEditionController extends Controller
             'course_id' => $request->integer('course_id') ?: null,
             'teacher_id' => $request->integer('teacher_id') ?: null,
             'year' => $request->integer('year') ?: null,
+            'status' => in_array($request->string('status')->toString(), ['en_curso', 'finalizada'], true)
+                ? $request->string('status')->toString()
+                : null,
         ];
 
         $editions = CourseEdition::query()
@@ -35,9 +39,12 @@ class CourseEditionController extends Controller
             ->when($filters['course_id'], fn ($q, $id) => $q->where('course_id', $id))
             ->when($filters['teacher_id'], fn ($q, $id) => $q->where('teacher_id', $id))
             ->when($filters['year'], fn ($q, $year) => $q->where('year', $year))
+            ->when($filters['status'], fn ($q, $status) => $status === 'finalizada'
+                ? $q->whereFinished()
+                : $q->whereNotFinished())
             // Las ediciones históricas sin fechas van al final de su año.
             ->orderByDesc('year')
-            ->orderByRaw('start_date DESC NULLS LAST')
+            ->orderByRaw(Sql::orderByDescNullsLast('start_date'))
             ->orderByDesc('id')
             ->paginate(15)
             ->withQueryString()
@@ -50,6 +57,7 @@ class CourseEditionController extends Controller
                 'end_date' => $e->end_date?->toDateString(),
                 'year' => $e->year,
                 'enrollments_count' => $e->enrollments_count,
+                'finished' => $e->isFinished(),
             ]);
 
         return Inertia::render('editions/Index', [
@@ -58,6 +66,22 @@ class CourseEditionController extends Controller
             'options' => $this->options(),
             'years' => CourseEdition::query()->visibleTo($request->user())
                 ->distinct()->orderByDesc('year')->pluck('year'),
+            // Cuántas ediciones ya finalizó cada curso: ayuda a ver de un vistazo
+            // qué talleres se repiten más seguido, respetando el alcance del Ponente.
+            'finishedByCourse' => Course::query()
+                ->withCount(['editions as finished_editions_count' => fn ($q) => $q
+                    ->visibleTo($request->user())
+                    ->whereFinished()])
+                ->get(['id', 'code', 'name'])
+                ->filter(fn (Course $c) => $c->finished_editions_count > 0)
+                ->sortByDesc('finished_editions_count')
+                ->values()
+                ->map(fn (Course $c) => [
+                    'id' => $c->id,
+                    'code' => $c->code,
+                    'name' => $c->name,
+                    'finished_count' => $c->finished_editions_count,
+                ]),
             'can' => ['create' => $request->user()->can('create', CourseEdition::class)],
         ]);
     }
@@ -109,6 +133,7 @@ class CourseEditionController extends Controller
                 'id' => $e->id,
                 'registration_code' => $e->registration_code,
                 'grade' => $e->grade,
+                'attended' => $e->attended,
                 'status' => $e->status->value,
                 'role' => $e->role->value,
                 'historical' => $e->historical,

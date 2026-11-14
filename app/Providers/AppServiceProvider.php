@@ -41,6 +41,19 @@ class AppServiceProvider extends ServiceProvider
     protected function configureRateLimiting(): void
     {
         RateLimiter::for('verification', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
+
+        // Portal del participante (DNI + código, sin contraseña): el código de
+        // registro es correlativo y por tanto más adivinable que una clave real,
+        // así que limitamos tanto por DNI (frena tantear códigos contra una misma
+        // persona) como por IP (frena recorrer muchos DNIs desde un mismo origen).
+        RateLimiter::for('portal-login', function (Request $request) {
+            $dni = mb_strtoupper(preg_replace('/\s+/', '', (string) $request->input('dni')));
+
+            return [
+                Limit::perMinute(5)->by('portal-dni:'.$dni),
+                Limit::perMinute(20)->by('portal-ip:'.$request->ip()),
+            ];
+        });
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\InteractsWithToasts;
 use App\Http\Requests\Teachers\TeacherRequest;
 use App\Models\Teacher;
+use App\Support\Sql;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -28,9 +29,9 @@ class TeacherController extends Controller
             ->with('user:id,email')
             ->withCount('editions')
             ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q
-                ->where('dni', 'ilike', "{$search}%")
-                ->orWhere('full_name', 'ilike', "%{$search}%")
-                ->orWhere('specialty', 'ilike', "%{$search}%")))
+                ->where('dni', Sql::likeOperator(), "{$search}%")
+                ->orWhere('full_name', Sql::likeOperator(), "%{$search}%")
+                ->orWhere('specialty', Sql::likeOperator(), "%{$search}%")))
             ->orderBy('full_name')
             ->paginate(15)
             ->withQueryString()

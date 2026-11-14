@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\InteractsWithToasts;
 use App\Http\Requests\Courses\CourseRequest;
 use App\Models\Course;
+use App\Support\Sql;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -24,8 +25,8 @@ class CourseController extends Controller
         $courses = Course::query()
             ->withCount('editions')
             ->when($search !== '', fn ($q) => $q->where(fn ($q) => $q
-                ->where('code', 'ilike', "{$search}%")
-                ->orWhere('name', 'ilike', "%{$search}%")))
+                ->where('code', Sql::likeOperator(), "{$search}%")
+                ->orWhere('name', Sql::likeOperator(), "%{$search}%")))
             ->orderBy('code')
             ->paginate(15)
             ->withQueryString()

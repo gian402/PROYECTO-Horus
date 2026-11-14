@@ -14,25 +14,35 @@ class GradeController extends Controller
     use InteractsWithToasts;
 
     /**
-     * Guarda las notas de la edición en una sola transacción.
+     * Guarda las notas y la asistencia de la edición en una sola transacción.
      * El estado (cursando / aprobado / desaprobado) lo deriva Enrollment al guardar.
      */
     public function update(UpdateGradesRequest $request, CourseEdition $edition): RedirectResponse
     {
         /** @var array<int|string, string|null> $grades */
         $grades = $request->validated('grades');
+        /** @var array<int|string, bool|null> $attendance */
+        $attendance = $request->validated('attendance') ?? [];
 
-        $changed = DB::transaction(function () use ($edition, $grades): int {
+        $ids = array_unique([...array_keys($grades), ...array_keys($attendance)]);
+
+        $changed = DB::transaction(function () use ($edition, $grades, $attendance, $ids): int {
             $changed = 0;
 
             $edition->enrollments()
-                ->whereIn('id', array_keys($grades))
+                ->whereIn('id', $ids)
                 ->lockForUpdate()
                 ->get()
-                ->each(function (Enrollment $enrollment) use ($grades, &$changed): void {
-                    $enrollment->grade = $grades[$enrollment->id];
+                ->each(function (Enrollment $enrollment) use ($grades, $attendance, &$changed): void {
+                    if (array_key_exists($enrollment->id, $grades)) {
+                        $enrollment->grade = $grades[$enrollment->id];
+                    }
 
-                    if ($enrollment->isDirty('grade')) {
+                    if (array_key_exists($enrollment->id, $attendance)) {
+                        $enrollment->attended = $attendance[$enrollment->id];
+                    }
+
+                    if ($enrollment->isDirty(['grade', 'attended'])) {
                         $enrollment->save();
                         $changed++;
                     }
@@ -41,7 +51,7 @@ class GradeController extends Controller
             return $changed;
         });
 
-        $this->toast($changed === 0 ? 'No había cambios en las notas.' : "Notas guardadas ({$changed}).");
+        $this->toast($changed === 0 ? 'No había cambios.' : "Cambios guardados ({$changed}).");
 
         return back();
     }

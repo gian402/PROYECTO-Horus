@@ -7,6 +7,7 @@ use App\Models\Certificate;
 use App\Models\CourseEdition;
 use App\Models\Enrollment;
 use App\Models\Student;
+use App\Support\Sql;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -85,7 +86,7 @@ class DashboardController extends Controller
                     'enrollments as graded_count' => fn ($q) => $q->where('role', EnrollmentRole::Participante->value)->whereIn('status', ['aprobado', 'desaprobado']),
                 ])
                 ->orderByDesc('year')
-                ->orderByRaw('start_date DESC NULLS LAST')
+                ->orderByRaw(Sql::orderByDescNullsLast('start_date'))
                 ->limit(5)
                 ->get()
                 ->map(fn (CourseEdition $e) => [
@@ -133,14 +134,14 @@ class DashboardController extends Controller
 
         $enrollments = $participants->toBase()
             ->whereBetween('created_at', [$from, $to])
-            ->selectRaw('extract(month from created_at)::int as month, count(*) as total')
-            ->groupByRaw('extract(month from created_at)')
+            ->selectRaw(Sql::monthOf('created_at').' as month, count(*) as total')
+            ->groupByRaw(Sql::groupByMonthOf('created_at'))
             ->pluck('total', 'month');
 
         $issued = $certificates->toBase()
             ->whereBetween('issued_at', [$from, $to])
-            ->selectRaw('extract(month from issued_at)::int as month, count(*) as total')
-            ->groupByRaw('extract(month from issued_at)')
+            ->selectRaw(Sql::monthOf('issued_at').' as month, count(*) as total')
+            ->groupByRaw(Sql::groupByMonthOf('issued_at'))
             ->pluck('total', 'month');
 
         return collect(self::MONTHS)->map(fn (string $label, int $i) => [
